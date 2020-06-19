@@ -16,7 +16,7 @@ class MainTask(abc.ABC):
     @property
     @abc.abstractmethod
     def directory(self):
-        """ String with experiment directory name (to be in tasks/experiment_dir). """
+        """ String with experiment directory name (to be in tasks/directory). """
         raise NotImplementedError
     @property
     @abc.abstractmethod
@@ -26,7 +26,7 @@ class MainTask(abc.ABC):
     @property
     @abc.abstractmethod
     def output_file(self):
-        """ String with output filename (will be saved in tasks/experiment_dir/OUTPUT/output_file). """
+        """ String with output filename (will be saved in tasks/directory/OUTPUT/subdirectory/output_file). """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -42,18 +42,18 @@ class MainTask(abc.ABC):
         """ Method that loads self.output_file """
         raise NotImplementedError
 
-    log_file_handler = None 
+    log_file_handler = None  # This will be used by subprocess to save the log of external executables, if needed.
+    subdirectory = ''  # No subdirectory by default, so output will go to tasks/directory/OUTPUT/ by default
 
 
-def create_output_folder_and_path(task):
-    output_directory = os.path.join(task.directory, 'OUTPUT')
+def create_output_directory(task):
+    output_directory = os.path.join(task.directory, 'OUTPUT', task.subdirectory)
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
-    output_file =  os.path.join(output_directory,task.output_file)
-    return output_file
+    return output_directory
 
 
-def create_log_folder_and_path(task):
+def create_log_directory_and_get_log_file(task):
     log_directory = os.path.join(task.directory, 'LOG')
     if not os.path.exists(log_directory):
         os.makedirs(log_directory)
@@ -85,9 +85,10 @@ def run_task(task_class):
     # If not all the abstract methods are defined, this will raise an error
     task = task_class()
 
-    # Obtain full paths to output and log files, and create folders OUTPUT and LOG
-    task.output_file = create_output_folder_and_path(task) 
-    task.log_file = create_log_folder_and_path(task)
+    # Obtain full paths to output and log files, and create directories OUTPUT and LOG
+    task.output_dir = create_output_directory(task) # Save output directory as a task attribute. This will be handy if we create other output during the task in addition to the main output file
+    task.output_file =  os.path.join(task.output_dir,task.output_file)
+    task.log_file = create_log_directory_and_get_log_file(task)
     
     # Redirect all output to log file
     f = open(task.log_file, 'a')
