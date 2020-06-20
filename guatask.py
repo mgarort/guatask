@@ -99,7 +99,7 @@ def run_task(task_class):
     task.log_file_handler = f # Save file handler as a task attribute in case there are external executables and we need to redirect their output to the log file
 
     # Print task name and starting time
-    print('\n### STARTING TASK ###')
+    print('\n\n### STARTING TASK ###')
     print('Task: ', task_class.__name__)
     print('Started at time: ', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
