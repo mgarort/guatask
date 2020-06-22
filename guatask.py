@@ -102,6 +102,8 @@ def run_task(task_class):
     print('\n### STARTING TASK ###')
     print('Task: ', task_class.__name__)
     print('Started at time: ', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    sys.stdout.flush()
+    sys.stderr.flush()
 
     # Check that task is not already completed:
     if is_task_already_completed(task):
