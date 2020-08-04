@@ -1,4 +1,6 @@
 # This file contains sample tasks for the purpose of showing an example and debugging
+# Example usage for the task Sum:
+# python sample_tasks.py Sum 
 
 class Sum(MainTask):
     """ Sample task that Multiply can depend on"""
