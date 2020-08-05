@@ -44,6 +44,7 @@ class MainTask(abc.ABC):
 
     log_file_handler = None  # This will be used by subprocess to save the log of external executables, if needed.
     subdirectory = ''  # No subdirectory by default, so output will go to tasks/directory/OUTPUT/ by default
+    debug = False # TODO Make this into a command line argument rather than a task argument
 
 
 def create_output_directory(task):
@@ -107,8 +108,10 @@ def run_task(task_class):
     tmp_f = open(task.tmp_log_file, 'w')
     original_stdout = sys.stdout
     original_stderr = sys.stderr
-    sys.stdout = tmp_f # Send stdout to file # This throws an error in iPython, possibly because iPython doesn't open stdout and stderr but has its own files for this
-    sys.stderr = tmp_f # Send stderr to file
+    if not debug:
+        sys.stdout = tmp_f # Send stdout to file
+                           # NOTE This throws an error in iPython, possibly because iPython doesn't open stdout and stderr but has its own files for this
+        sys.stderr = tmp_f # Send stderr to file
     task.log_file_handler = tmp_f # Save file handler as a task attribute in case there are external executables and we need to redirect their output to the log file
 
     # Print task name and starting time
@@ -138,8 +141,9 @@ def run_task(task_class):
         print('### FINISHED TASK ###')
 
     # Restore stdout and stderr back where they were and close log file
-    sys.stdout = original_stdout
-    sys.stderr = original_stderr
+    if not debug:
+        sys.stdout = original_stdout
+        sys.stderr = original_stderr
     tmp_f.close()
 
     # Copy contents of temporary log file to final log file
