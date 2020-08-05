@@ -109,7 +109,7 @@ def run_task(task_class):
     tmp_f = open(task.tmp_log_file, 'w')
     original_stdout = sys.stdout
     original_stderr = sys.stderr
-    if not debug:
+    if not task.debug:
         sys.stdout = tmp_f # Send stdout to file
                            # NOTE This throws an error in iPython, possibly because iPython doesn't open stdout and stderr but has its own files for this
         sys.stderr = tmp_f # Send stderr to file
@@ -142,7 +142,7 @@ def run_task(task_class):
         print('### FINISHED TASK ###')
 
     # Restore stdout and stderr back where they were and close log file
-    if not debug:
+    if not task.debug:
         sys.stdout = original_stdout
         sys.stderr = original_stderr
     tmp_f.close()
