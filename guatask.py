@@ -78,7 +78,8 @@ def check_dependencies_are_completed(task):
     else:
         for each_required_task in task.requires:
             each_instance = each_required_task()
-            is_completed = os.path.exists(os.path.join(task.directory, 'OUTPUT', each_instance.output_file))
+            each_required_output_file = os.path.join(each_instance.directory, 'OUTPUT', each_instance.subdirectory, each_instance.output_file)
+            is_completed = os.path.exists(each_required_output_file)
             is_completed_message = 'COMPLETE' if is_completed else 'INCOMPLETE'
             # each_instance is a class instance, so to obtain the class name we do each_instance.__class__.__name__
             print('\t' + each_instance.__class__.__name__, is_completed_message)
