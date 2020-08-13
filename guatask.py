@@ -52,7 +52,7 @@ class MainTask(abc.ABC):
     @property
     def output_filepath(self):
         """ Takes the directory, subdirectory and output filename and combines them together"""
-        return os.path.abspath(os.path.join(self.directory,self.subdirectory,self.output_filename))
+        return os.path.abspath(os.path.join(self.directory,'OUTPUT',self.subdirectory,self.output_filename))
     log_file_handler = None  # This will be set by the task manager later, and it's there because it can be used 
                              # by subprocess to save the log of external executables, if needed
 
