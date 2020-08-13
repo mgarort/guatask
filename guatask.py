@@ -27,7 +27,7 @@ class MainTask(abc.ABC):
     @property
     @abc.abstractmethod
     def output_filename(self):
-        """ String with output filename (will be saved in tasks/directory/OUTPUT/subdirectory/output_file). """
+        """ String with output filename (to be saved in tasks/directory/OUTPUT/subdirectory/output_filename). """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -35,12 +35,12 @@ class MainTask(abc.ABC):
         """ Method with sequence of instructions to complete the task. Needs to:
             - Collect necessary input from self.requires and self.parameters.
             - If using external executables, redirect standard output to self.log_file (through self.log_file_handler).
-            - Save output to self.output_file.
+            - Save output to self.output_filename.
         """
         raise NotImplementedError
     @abc.abstractmethod
     def load_output(self):
-        """ Method that loads self.output_file """
+        """ Method that loads self.output_filename """
         raise NotImplementedError
 
     # Attributes and properties that can be optionally defined
@@ -87,8 +87,8 @@ def check_dependencies_are_completed(task):
     else:
         for each_required_task in task.requires:
             each_instance = each_required_task()
-            each_required_output_file = os.path.join(each_instance.directory, 'OUTPUT', each_instance.subdirectory, each_instance.output_file)
-            is_completed = os.path.exists(each_required_output_file)
+            each_required_output_filename = os.path.join(each_instance.directory, 'OUTPUT', each_instance.subdirectory, each_instance.output_filename)
+            is_completed = os.path.exists(each_required_output_filename)
             is_completed_message = 'COMPLETE' if is_completed else 'INCOMPLETE'
             # each_instance is a class instance, so to obtain the class name we do each_instance.__class__.__name__
             print('\t' + each_instance.__class__.__name__, is_completed_message)
@@ -100,7 +100,7 @@ def check_dependencies_are_completed(task):
 
 
 def check_task_is_completed(task):
-    is_completed = os.path.exists(task.output_file)
+    is_completed = os.path.exists(task.output_filename)
     return is_completed
 
 
@@ -110,7 +110,7 @@ def run_task(task_class):
 
     # Obtain full paths to output and log files, and create directories OUTPUT and LOG
     task.output_dir = create_output_directory(task) # Save output directory as a task attribute. This will be handy if we create other output during the task in addition to the main output file
-    task.output_file =  os.path.join(task.output_dir,task.output_file)
+    task.output_filename =  os.path.join(task.output_dir,task.output_filename)
     task.log_file = create_log_directory_and_get_log_file(task) # Common, final log file for whole experiment directory
     task.tmp_log_file = create_log_directory_and_get_tmp_log_file(task)  # Individual, temporary log file for each task. This way several tasks can run and write log simultaneously
     
