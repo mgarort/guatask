@@ -110,7 +110,6 @@ def run_task(task_class):
 
     # Obtain full paths to output and log files, and create directories OUTPUT and LOG
     task.output_dir = create_output_directory(task) # Save output directory as a task attribute. This will be handy if we create other output during the task in addition to the main output file
-    task.output_filename =  os.path.join(task.output_dir,task.output_filename)
     task.log_file = create_log_directory_and_get_log_file(task) # Common, final log file for whole experiment directory
     task.tmp_log_file = create_log_directory_and_get_tmp_log_file(task)  # Individual, temporary log file for each task. This way several tasks can run and write log simultaneously
     
