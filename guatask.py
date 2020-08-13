@@ -8,6 +8,7 @@ import abc
 
 class MainTask(abc.ABC):
 
+    # Properties and functions that need to be defined
     @property
     @abc.abstractmethod
     def requires(self):
@@ -25,7 +26,7 @@ class MainTask(abc.ABC):
         raise NotImplementedError
     @property
     @abc.abstractmethod
-    def output_file(self):
+    def output_filename(self):
         """ String with output filename (will be saved in tasks/directory/OUTPUT/subdirectory/output_file). """
         raise NotImplementedError
 
@@ -42,10 +43,18 @@ class MainTask(abc.ABC):
         """ Method that loads self.output_file """
         raise NotImplementedError
 
-    log_file_handler = None  # This will be used by subprocess to save the log of external executables, if needed.
+    # Attributes and properties that can be optionally defined
     subdirectory = ''  # No subdirectory by default, so output will go to tasks/directory/OUTPUT/ by default
     debug = False # TODO Make this into a command line argument rather than a task argument
 
+    # Utility properties and functions that are not to be set manually TODO Check the naming convention and whether it would be good
+    #                                                                       to prepend an underscore or something
+    @property
+    def output_filepath(self):
+        """ Takes the directory, subdirectory and output filename and combines them together"""
+        return os.path.abspath(os.path.join(self.directory,self.subdirectory,self.output_filename))
+    log_file_handler = None  # This will be set by the task manager later, and it's there because it can be used 
+                             # by subprocess to save the log of external executables, if needed
 
 def create_output_directory(task):
     output_directory = os.path.join(task.directory, 'OUTPUT', task.subdirectory)
