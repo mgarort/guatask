@@ -49,35 +49,33 @@ class MainTask(abc.ABC):
 
     # Utility properties and functions that are not to be set manually TODO Check the naming convention and whether it would be good
     #                                                                       to prepend an underscore or something
+    log_file_handler = None  # This will be set by the task manager later, and it's there because it can be used 
+                             # by subprocess to save the log of external executables, if needed
     @property
     def output_filepath(self):
         """ Takes the directory, subdirectory and output filename and combines them together"""
         return os.path.abspath(os.path.join(self.directory,'OUTPUT',self.subdirectory,self.output_filename))
-    log_file_handler = None  # This will be set by the task manager later, and it's there because it can be used 
-                             # by subprocess to save the log of external executables, if needed
+    @property
+    def output_dir(self):
+        """ Returns the full path to the output directory"""
+        return os.path.abspath(os.path.join(self.directory,'OUTPUT',self.subdirectory))
+    @property
+    def log_file(self):
+        return os.path.abspath(os.path.join(self.directory, 'LOG', 'task.log'))
+    @property
+    def tmp_log_file(self):
+        # The task being run is passed as an instance object (rather than as a class object), so to get the class name we need task.__class__.__name__
+        return os.path.abspath(os.path.join(self.directory, 'LOG', self.__class__.__name__ + '.log'))
+
 
 def create_output_directory(task):
-    output_directory = os.path.join(task.directory, 'OUTPUT', task.subdirectory)
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-    return output_directory
+    if not os.path.exists(self.output_dir):
+        os.makedirs(self.output_dir)
 
-
-def create_log_directory_and_get_log_file(task):
+def create_log_directory(task):
     log_directory = os.path.join(task.directory, 'LOG')
     if not os.path.exists(log_directory):
         os.makedirs(log_directory)
-    log_file = os.path.join(log_directory, 'task.log')
-    return log_file
-
-def create_log_directory_and_get_tmp_log_file(task):
-    log_directory = os.path.join(task.directory, 'LOG')
-    if not os.path.exists(log_directory):
-        os.makedirs(log_directory)
-    # The task being run is passed as an instance object (rather than as a class object), so to get the class name we need task.__class__.__name__
-    tmp_log_file = os.path.join(log_directory, task.__class__.__name__ + '.log')
-    return tmp_log_file
-
 
 def check_dependencies_are_completed(task):
     are_all_completed = True
@@ -100,18 +98,15 @@ def check_dependencies_are_completed(task):
 
 
 def check_task_is_completed(task):
-    is_completed = os.path.exists(task.output_filename)
+    is_completed = os.path.exists(task.output_filepath)
     return is_completed
 
 
 def run_task(task_class):
     # If not all the abstract methods are defined, this will raise an error
-    task = task_class()
-
-    # Obtain full paths to output and log files, and create directories OUTPUT and LOG
-    task.output_dir = create_output_directory(task) # Save output directory as a task attribute. This will be handy if we create other output during the task in addition to the main output file
-    task.log_file = create_log_directory_and_get_log_file(task) # Common, final log file for whole experiment directory
-    task.tmp_log_file = create_log_directory_and_get_tmp_log_file(task)  # Individual, temporary log file for each task. This way several tasks can run and write log simultaneously
+    task = task_class() # TODO Perhaps we could create the output directory and the log directory as a part of the __init__ construction of the task instance, rather than by executing create_output_directory and create_log_directory
+    create_output_directory(task) # After creating it, the output directory can always be accessed through the @property method task.output_dir  # TODO Change how create_output_directory returns the output_dir. create_output_directory should check if the directory exists and create it, but the path to output_dir should be given by @property method.
+    create_log_directory(task) # After the log directory is created, we can get the paths for the log file and the tmp log file with the @property methods task.log_file and task.tmp_log_file. 
     
     # Redirect all output to tmp log file
     tmp_f = open(task.tmp_log_file, 'w')
