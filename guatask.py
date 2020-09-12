@@ -69,8 +69,8 @@ class MainTask(abc.ABC):
 
 
 def create_output_directory(task):
-    if not os.path.exists(self.output_dir):
-        os.makedirs(self.output_dir)
+    if not os.path.exists(task.output_dir):
+        os.makedirs(task.output_dir)
 
 def create_log_directory(task):
     log_directory = os.path.join(task.directory, 'LOG')
