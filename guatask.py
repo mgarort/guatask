@@ -6,7 +6,7 @@ from datetime import datetime
 import abc
 
 
-class MainTask(abc.ABC):
+class Task(abc.ABC):
 
 
     # PROPERTIES AND FUNCTIONS THAT NEED TO BE DEFINED MANUALLY
