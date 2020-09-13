@@ -109,7 +109,7 @@ def run_task(task_class):
     create_log_directory(task) # After the log directory is created, we can get the paths for the log file and the tmp log file with the @property methods task.log_file and task.tmp_log_file. 
     
     # Redirect all output to tmp log file
-    tmp_f = open(task.tmp_log_file, 'w')
+    tmp_f = open(task.tmp_log_file, 'a')
     original_stdout = sys.stdout
     original_stderr = sys.stderr
     if not task.debug:
@@ -119,7 +119,8 @@ def run_task(task_class):
     task.log_file_handler = tmp_f # Save file handler as a task attribute in case there are external executables and we need to redirect their output to the log file
 
     # Print task name and starting time
-    print('\n\n### STARTING TASK ###')
+    print('\n\n### STARTING TASK ###')   # To separate consecutive tasks in the log file, space is added before the "starting" message and not after
+                                         # the "finished" message, since the "finished" message may not be printed if there is an error.
     print('Task: ', task_class.__name__)
     print('Started at time: ', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     sys.stdout.flush()
@@ -127,8 +128,8 @@ def run_task(task_class):
 
     # Run task only if: 1) The task itself is not already completed
     #                   2) The task dependencies are completed
-    is_task_completed = check_task_is_completed(task)
-    are_dependencies_completed = check_dependencies_are_completed(task)
+    is_task_completed = check_task_is_completed(task) # TODO Maybe this could be implemented as a property method of Task
+    are_dependencies_completed = check_dependencies_are_completed(task) # TODO Again, maybe this could be implemented as a property method of Task
 
     if is_task_completed:
         print('Task is already completed. No need to run again.')
@@ -137,7 +138,7 @@ def run_task(task_class):
         print('Some required tasks are incomplete. Cannot run', task_class.__name__)
         print('### ABORTING TASK ###')
     else:
-        print("This task parameters are ", task.parameters)
+        print('This task parameters are ', task.parameters)
         # Run the task 
         task.run()
         # Print finishing time
