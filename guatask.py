@@ -8,7 +8,8 @@ import abc
 
 class MainTask(abc.ABC):
 
-    # Properties and functions that need to be defined
+
+    # PROPERTIES AND FUNCTIONS THAT NEED TO BE DEFINED MANUALLY
     @property
     @abc.abstractmethod
     def requires(self):
@@ -29,7 +30,6 @@ class MainTask(abc.ABC):
     def output_filename(self):
         """ String with output filename (to be saved in tasks/directory/OUTPUT/subdirectory/output_filename). """
         raise NotImplementedError
-
     @abc.abstractmethod
     def run(self):
         """ Method with sequence of instructions to complete the task. Needs to:
@@ -43,12 +43,13 @@ class MainTask(abc.ABC):
         """ Method that loads self.output_filename """
         raise NotImplementedError
 
-    # Attributes and properties that can be optionally defined
-    subdirectory = ''  # No subdirectory by default, so output will go to tasks/directory/OUTPUT/ by default
-    debug = False # TODO Make this into a command line argument rather than a task argument
 
-    # Utility properties and functions that are not to be set manually TODO Check the naming convention and whether it would be good
-    #                                                                       to prepend an underscore or something
+    # ATTRIBUTES AND PROPERTIES THAT CAN BE DEFINED MANUALLY IF DESIRED
+    subdirectory = ''  # No subdirectory by default, so output will go to tasks/directory/OUTPUT/ by default
+    debug = False # TODO Make this into a command line argument rather than a task argument XXX Really a command line argument? It seems to work well as it is
+
+
+    # UTILITY PROPERTIES AND FUNCTIONS THAT ARE NOT TO BE SET MANUALLY # TODO Check the naming convention and whether it would be good to prepend an underscore or something
     log_file_handler = None  # This will be set by the task manager later, and it's there because it can be used 
                              # by subprocess to save the log of external executables, if needed
     @property
@@ -66,48 +67,48 @@ class MainTask(abc.ABC):
     def tmp_log_file(self):
         # The task being run is passed as an instance object (rather than as a class object), so to get the class name we need task.__class__.__name__
         return os.path.abspath(os.path.join(self.directory, 'LOG', self.__class__.__name__ + '.log'))
+    @property
+    def is_completed(self):
+        is_completed = os.path.exists(self.output_filepath)
+        return is_completed
+    @property
+    def are_dependencies_completed(self):
+        are_all_completed = True
+        print('This task depends on:')
+        if len(self.requires) == 0:
+            print('\tNONE')
+        else:
+            for each_required_task in self.requires:
+                each_instance = each_required_task()
+                each_required_output_filename = os.path.join(each_instance.directory, 'OUTPUT', each_instance.subdirectory, each_instance.output_filename)
+                is_completed = os.path.exists(each_required_output_filename)
+                is_completed_message = 'COMPLETE' if is_completed else 'INCOMPLETE'
+                # each_instance is a class instance, so to obtain the class name we do each_instance.__class__.__name__
+                print('\t' + each_instance.__class__.__name__, is_completed_message)
+                if not is_completed:
+                    are_all_completed = False
+        return are_all_completed
 
 
-def create_output_directory(task):
-    if not os.path.exists(task.output_dir):
-        os.makedirs(task.output_dir)
+    # USUAL INIT
+    def __init__(self):
+        # Create output directory
+        # After creating it, the output directory can always be accessed through the @property method task.output_dir  
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
 
-def create_log_directory(task):
-    log_directory = os.path.join(task.directory, 'LOG')
-    if not os.path.exists(log_directory):
-        os.makedirs(log_directory)
+        # Create log directory
+        # After the log directory is created, we can get the paths for the log file and the tmp log file with the @property methods 
+        # task.log_file and task.tmp_log_file. 
+        log_directory = os.path.join(self.directory, 'LOG')
+        if not os.path.exists(log_directory):
+            os.makedirs(log_directory)
 
-def check_dependencies_are_completed(task):
-    are_all_completed = True
-    print('This task depends on:')
-    if len(task.requires) == 0:
-        print('\tNONE')
-    else:
-        for each_required_task in task.requires:
-            each_instance = each_required_task()
-            each_required_output_filename = os.path.join(each_instance.directory, 'OUTPUT', each_instance.subdirectory, each_instance.output_filename)
-            is_completed = os.path.exists(each_required_output_filename)
-            is_completed_message = 'COMPLETE' if is_completed else 'INCOMPLETE'
-            # each_instance is a class instance, so to obtain the class name we do each_instance.__class__.__name__
-            print('\t' + each_instance.__class__.__name__, is_completed_message)
-
-            if not is_completed:
-                are_all_completed = False
-
-    return are_all_completed
-
-
-def check_task_is_completed(task):
-    is_completed = os.path.exists(task.output_filepath)
-    return is_completed
 
 
 def run_task(task_class):
     # If not all the abstract methods are defined, this will raise an error
-    task = task_class() # TODO Perhaps we could create the output directory and the log directory as a part of the __init__ construction of the task instance, rather than by executing create_output_directory and create_log_directory
-    create_output_directory(task) # After creating it, the output directory can always be accessed through the @property method task.output_dir  # TODO Change how create_output_directory returns the output_dir. create_output_directory should check if the directory exists and create it, but the path to output_dir should be given by @property method.
-    create_log_directory(task) # After the log directory is created, we can get the paths for the log file and the tmp log file with the @property methods task.log_file and task.tmp_log_file. 
-    
+    task = task_class() 
     # Redirect all output to tmp log file
     tmp_f = open(task.tmp_log_file, 'a')
     original_stdout = sys.stdout
@@ -128,13 +129,10 @@ def run_task(task_class):
 
     # Run task only if: 1) The task itself is not already completed
     #                   2) The task dependencies are completed
-    is_task_completed = check_task_is_completed(task) # TODO Maybe this could be implemented as a property method of Task
-    are_dependencies_completed = check_dependencies_are_completed(task) # TODO Again, maybe this could be implemented as a property method of Task
-
-    if is_task_completed:
+    if task.is_completed:
         print('Task is already completed. No need to run again.')
         print('### ABORTING TASK ###')
-    elif not are_dependencies_completed:
+    elif not task.are_dependencies_completed:
         print('Some required tasks are incomplete. Cannot run', task_class.__name__)
         print('### ABORTING TASK ###')
     else:
