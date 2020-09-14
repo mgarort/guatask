@@ -4,10 +4,11 @@ import sys
 import os
 from datetime import datetime
 import abc
+import torch
+import numpy as np
 
 
 class Task(abc.ABC):
-
 
     # PROPERTIES AND FUNCTIONS THAT NEED TO BE DEFINED MANUALLY
     @property
@@ -103,6 +104,44 @@ class Task(abc.ABC):
         log_directory = os.path.join(self.directory, 'LOG')
         if not os.path.exists(log_directory):
             os.makedirs(log_directory)
+
+
+
+class TrainTask(Task):  # TODO Implement all the features described in the guatask page of your wiki
+    def __init__(self):
+        super().__init__()
+
+
+
+class PytorchTrainTask(TrainTask):  # TODO Implement all the features described in the guatask page of your wiki
+    def __init__(self):
+        super().__init__()
+        use_cuda = self.parameters['use_cuda']
+        self.device = torch.device('cuda' if use_cuda else 'cpu')
+    def evaluate(self,dataloader,verbose=True): 
+        '''data could be a dataloader if Pytorch, or just a numpy array if sklearn.'''
+        metric = self.parameters['metric']
+        model = self.model.to(self.device)
+        dataloader_len = dataloader.dataset.len
+        batch_size = self.parameters['batch_size']
+        Y_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
+        P_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
+        for idx, batch in enumerate(dataloader):
+            X, Y = batch
+            X = X.to(self.device)  # if the evaluation is to be executed outside of task.run, self.device should be set as a task attribute in PytorchTrainTask
+            Y = Y.reshape(-1,1)
+            Y = Y.double().to(self.device)
+            P = model(X) 
+            Y_all[idx*batch_size:(idx+1)*batch_size] = Y.detach().cpu().numpy()
+            P_all[idx*batch_size:(idx+1)*batch_size] = P.detach().cpu().numpy()
+            log_freq = 10
+            if verbose:
+                if idx % log_freq == log_freq - 1:
+                    print('Processed', idx+1, 'batches')
+        metric_value = metric(Y_all,P_all)
+        print('Metric used:', metric)
+        print('Metric value:', metric_value)
+
 
 
 
