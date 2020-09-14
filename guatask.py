@@ -118,8 +118,9 @@ class PytorchTrainTask(TrainTask):  # TODO Implement all the features described 
         super().__init__()
         use_cuda = self.parameters['use_cuda']
         self.device = torch.device('cuda' if use_cuda else 'cpu')
-    def evaluate(self,dataloader,verbose=True): 
-        '''data could be a dataloader if Pytorch, or just a numpy array if sklearn.'''
+    def evaluate(self,dataloader,verbose=False): 
+        '''Evaluate the performance of the model in its current state (which could be at any stage before, during or after training)
+        - dataloader: Pytorch dataloader containing the dataset to evaluate on.'''
         metric = self.parameters['metric']
         model = self.model.to(self.device)
         dataloader_len = dataloader.dataset.len
@@ -141,6 +142,16 @@ class PytorchTrainTask(TrainTask):  # TODO Implement all the features described 
         metric_value = metric(Y_all,P_all)
         print('Metric used:', metric)
         print('Metric value:', metric_value)
+    def checkpoint_current_model(self,n_epochs_so_far):
+        '''Saves the model in its current state (which could be before, during or after training).
+        - n_epochs_so_far: number of epochs trained so far'''
+        # Create path for checkpoint
+        model_name = self.output_filename.split('.pt')[0]
+        checkpoint_name = model_name + '_epoch' + str(n_epochs_so_far)
+        checkpoint_path = os.path.join(self.output_dir,checkpoint_name + '.pt')
+        # Save checkpoint
+        torch.save(self.model.state_dict(), checkpoint_path)
+
 
 
 
