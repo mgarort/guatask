@@ -116,15 +116,15 @@ class TrainTask(Task):  # TODO Implement all the features described in the guata
 class PytorchTrainTask(TrainTask):  # TODO Implement all the features described in the guatask page of your wiki
     def __init__(self):
         super().__init__()
-        use_cuda = self.parameters['use_cuda']
+        use_cuda = self.parameters['train_loop']['use_cuda']
         self.device = torch.device('cuda' if use_cuda else 'cpu')
     def evaluate(self,dataloader,verbose=False): 
         '''Evaluate the performance of the model in its current state (which could be at any stage before, during or after training)
         - dataloader: Pytorch dataloader containing the dataset to evaluate on.'''
-        metric = self.parameters['metric']
+        metric = self.parameters['train_loop']['metric']
         model = self.model.to(self.device)
         dataloader_len = dataloader.dataset.len
-        batch_size = self.parameters['batch_size']
+        batch_size = self.parameters['train_loop']['batch_size']
         Y_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
         P_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
         for idx, batch in enumerate(dataloader):
