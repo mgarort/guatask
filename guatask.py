@@ -62,6 +62,10 @@ class Task(abc.ABC):
         """ Returns the full path to the output directory"""
         return os.path.abspath(os.path.join(self.directory,'OUTPUT',self.subdirectory))
     @property
+    def input_dir(self):
+        """ Returns the full path to the input directory"""
+        return os.path.abspath(os.path.join(self.directory,'INPUT'))
+    @property
     def log_file(self):
         return os.path.abspath(os.path.join(self.directory, 'LOG', 'task.log'))
     @property
