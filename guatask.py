@@ -23,7 +23,7 @@ class Task(abc.ABC):
         raise NotImplementedError
     @property
     @abc.abstractmethod
-    def parameters(self):
+    def params(self):
         """ Dictionary of parameters. It is recommended to define the parameters dictionary in tasks/param.py and import from there. """
         raise NotImplementedError
     @property
@@ -34,7 +34,7 @@ class Task(abc.ABC):
     @abc.abstractmethod
     def run(self):
         """ Method with sequence of instructions to complete the task. Needs to:
-            - Collect necessary input from self.requires and self.parameters.
+            - Collect necessary input from self.requires and self.params.
             - If using external executables, redirect standard output to self.log_file (through self.log_file_handler).
             - Save output to self.output_filename.
         """
@@ -120,15 +120,15 @@ class TrainTask(Task):  # TODO Implement all the features described in the guata
 class PytorchTrainTask(TrainTask):  # TODO Implement all the features described in the guatask page of your wiki
     def __init__(self):
         super().__init__()
-        use_cuda = self.parameters['train_loop']['use_cuda']
+        use_cuda = self.params['train_loop']['use_cuda']
         self.device = torch.device('cuda' if use_cuda else 'cpu')
     def evaluate(self,dataloader,verbose=False): 
         '''Evaluate the performance of the model in its current state (which could be at any stage before, during or after training)
         - dataloader: Pytorch dataloader containing the dataset to evaluate on.'''
-        metric = self.parameters['train_loop']['metric']
+        metric = self.params['train_loop']['metric']
         model = self.model.to(self.device)
         dataloader_len = dataloader.dataset.len
-        batch_size = self.parameters['train_loop']['batch_size']
+        batch_size = self.params['train_loop']['batch_size']
         Y_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
         P_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
         for idx, batch in enumerate(dataloader):
@@ -190,7 +190,7 @@ def run_task(task_class):
         print('Some required tasks are incomplete. Cannot run', task_class.__name__)
         print('### ABORTING TASK ###')
     else:
-        print('This task parameters are ', task.parameters)
+        print('This task parameters are ', task.params)
         # Run the task 
         task.run()
         # Print finishing time
