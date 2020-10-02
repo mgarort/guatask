@@ -130,6 +130,8 @@ def run_task(task_class):
     sys.stdout.flush()
     sys.stderr.flush()
 
+    # TODO Print task parameters here too
+
     # Run task only if: 1) The task itself is not already completed
     #                   2) The task dependencies are completed
     is_task_completed = check_task_is_completed(task)
