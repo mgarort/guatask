@@ -4,11 +4,13 @@ import sys
 import os
 from datetime import datetime
 import abc
+import torch
+import numpy as np
 
 
-class MainTask(abc.ABC):
+class Task(abc.ABC):
 
-    # Properties and functions that need to be defined
+    # PROPERTIES AND FUNCTIONS THAT NEED TO BE DEFINED MANUALLY
     @property
     @abc.abstractmethod
     def requires(self):
@@ -21,7 +23,7 @@ class MainTask(abc.ABC):
         raise NotImplementedError
     @property
     @abc.abstractmethod
-    def parameters(self):
+    def params(self):
         """ Dictionary of parameters. It is recommended to define the parameters dictionary in tasks/param.py and import from there. """
         raise NotImplementedError
     @property
@@ -29,11 +31,10 @@ class MainTask(abc.ABC):
     def output_filename(self):
         """ String with output filename (to be saved in tasks/directory/OUTPUT/subdirectory/output_filename). """
         raise NotImplementedError
-
     @abc.abstractmethod
     def run(self):
         """ Method with sequence of instructions to complete the task. Needs to:
-            - Collect necessary input from self.requires and self.parameters.
+            - Collect necessary input from self.requires and self.params.
             - If using external executables, redirect standard output to self.log_file (through self.log_file_handler).
             - Save output to self.output_filename.
         """
@@ -43,78 +44,127 @@ class MainTask(abc.ABC):
         """ Method that loads self.output_filename """
         raise NotImplementedError
 
-    # Attributes and properties that can be optionally defined
-    subdirectory = ''  # No subdirectory by default, so output will go to tasks/directory/OUTPUT/ by default
-    debug = False # TODO Make this into a command line argument rather than a task argument
 
-    # Utility properties and functions that are not to be set manually TODO Check the naming convention and whether it would be good
-    #                                                                       to prepend an underscore or something
+    # ATTRIBUTES AND PROPERTIES THAT CAN BE DEFINED MANUALLY IF DESIRED
+    subdirectory = ''  # No subdirectory by default, so output will go to tasks/directory/OUTPUT/ by default
+    debug = False # TODO Make this into a command line argument rather than a task argument XXX Really a command line argument? It seems to work well as it is
+
+
+    # UTILITY PROPERTIES AND FUNCTIONS THAT ARE NOT TO BE SET MANUALLY # TODO Check the naming convention and whether it would be good to prepend an underscore or something
+    log_file_handler = None  # This will be set by the task manager later, and it's there because it can be used 
+                             # by subprocess to save the log of external executables, if needed
     @property
     def output_filepath(self):
         """ Takes the directory, subdirectory and output filename and combines them together"""
         return os.path.abspath(os.path.join(self.directory,'OUTPUT',self.subdirectory,self.output_filename))
-    log_file_handler = None  # This will be set by the task manager later, and it's there because it can be used 
-                             # by subprocess to save the log of external executables, if needed
-
-def create_output_directory(task):
-    output_directory = os.path.join(task.directory, 'OUTPUT', task.subdirectory)
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-    return output_directory
-
-
-def create_log_directory_and_get_log_file(task):
-    log_directory = os.path.join(task.directory, 'LOG')
-    if not os.path.exists(log_directory):
-        os.makedirs(log_directory)
-    log_file = os.path.join(log_directory, 'task.log')
-    return log_file
-
-def create_log_directory_and_get_tmp_log_file(task):
-    log_directory = os.path.join(task.directory, 'LOG')
-    if not os.path.exists(log_directory):
-        os.makedirs(log_directory)
-    # The task being run is passed as an instance object (rather than as a class object), so to get the class name we need task.__class__.__name__
-    tmp_log_file = os.path.join(log_directory, task.__class__.__name__ + '.log')
-    return tmp_log_file
-
-
-def check_dependencies_are_completed(task):
-    are_all_completed = True
-    print('This task depends on:')
-    if len(task.requires) == 0:
-        print('\tNONE')
-    else:
-        for each_required_task in task.requires:
-            each_instance = each_required_task()
-            each_required_output_filename = os.path.join(each_instance.directory, 'OUTPUT', each_instance.subdirectory, each_instance.output_filename)
-            is_completed = os.path.exists(each_required_output_filename)
-            is_completed_message = 'COMPLETE' if is_completed else 'INCOMPLETE'
-            # each_instance is a class instance, so to obtain the class name we do each_instance.__class__.__name__
-            print('\t' + each_instance.__class__.__name__, is_completed_message)
-
-            if not is_completed:
-                are_all_completed = False
-
-    return are_all_completed
+    @property
+    def output_dir(self):
+        """ Returns the full path to the output directory"""
+        return os.path.abspath(os.path.join(self.directory,'OUTPUT',self.subdirectory))
+    @property
+    def input_dir(self):
+        """ Returns the full path to the input directory"""
+        return os.path.abspath(os.path.join(self.directory,'INPUT'))
+    @property
+    def log_file(self):
+        return os.path.abspath(os.path.join(self.directory, 'LOG', 'task.log'))
+    @property
+    def tmp_log_file(self):
+        # The task being run is passed as an instance object (rather than as a class object), so to get the class name we need task.__class__.__name__
+        return os.path.abspath(os.path.join(self.directory, 'LOG', self.__class__.__name__ + '.log'))
+    @property
+    def is_completed(self):
+        is_completed = os.path.exists(self.output_filepath)
+        return is_completed
+    @property
+    def are_dependencies_completed(self):
+        are_all_completed = True
+        print('This task depends on:')
+        if len(self.requires) == 0:
+            print('\tNONE')
+        else:
+            for each_required_task in self.requires:
+                each_instance = each_required_task()
+                each_required_output_filename = os.path.join(each_instance.directory, 'OUTPUT', each_instance.subdirectory, each_instance.output_filename)
+                is_completed = os.path.exists(each_required_output_filename)
+                is_completed_message = 'COMPLETE' if is_completed else 'INCOMPLETE'
+                # each_instance is a class instance, so to obtain the class name we do each_instance.__class__.__name__
+                print('\t' + each_instance.__class__.__name__, is_completed_message)
+                if not is_completed:
+                    are_all_completed = False
+        return are_all_completed
 
 
-def check_task_is_completed(task):
-    is_completed = os.path.exists(task.output_filename)
-    return is_completed
+    # USUAL INIT
+    def __init__(self):
+        # Create output directory
+        # After creating it, the output directory can always be accessed through the @property method task.output_dir  
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+
+        # Create log directory
+        # After the log directory is created, we can get the paths for the log file and the tmp log file with the @property methods 
+        # task.log_file and task.tmp_log_file. 
+        log_directory = os.path.join(self.directory, 'LOG')
+        if not os.path.exists(log_directory):
+            os.makedirs(log_directory)
+
+
+
+class TrainTask(Task):  # TODO Implement all the features described in the guatask page of your wiki
+    def __init__(self):
+        super().__init__()
+
+
+
+class PytorchTrainTask(TrainTask):  # TODO Implement all the features described in the guatask page of your wiki
+    def __init__(self):
+        super().__init__()
+        use_cuda = self.params['train_loop']['use_cuda']
+        self.device = torch.device('cuda' if use_cuda else 'cpu')
+    def evaluate(self,dataloader,verbose=False): 
+        '''Evaluate the performance of the model in its current state (which could be at any stage before, during or after training)
+        - dataloader: Pytorch dataloader containing the dataset to evaluate on.'''
+        metric = self.params['train_loop']['metric']
+        model = self.model.to(self.device)
+        dataloader_len = dataloader.dataset.len
+        batch_size = self.params['train_loop']['batch_size']
+        Y_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
+        P_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
+        for idx, batch in enumerate(dataloader):
+            X, Y = batch
+            X = X.to(self.device)  # if the evaluation is to be executed outside of task.run, self.device should be set as a task attribute in PytorchTrainTask
+            Y = Y.reshape(-1,1)
+            Y = Y.double().to(self.device)
+            P = model(X) 
+            Y_all[idx*batch_size:(idx+1)*batch_size] = Y.detach().cpu().numpy()
+            P_all[idx*batch_size:(idx+1)*batch_size] = P.detach().cpu().numpy()
+            log_freq = 10
+            if verbose:
+                if idx % log_freq == log_freq - 1:
+                    print('Processed', idx+1, 'batches')
+        metric_value = metric(Y_all,P_all)
+        print('Metric used:', metric)
+        print('Metric value:', metric_value)
+    def checkpoint_current_model(self,n_epochs_so_far):
+        '''Saves the model in its current state (which could be before, during or after training).
+        - n_epochs_so_far: number of epochs trained so far'''
+        # Create path for checkpoint
+        model_name = self.output_filename.split('.pt')[0]
+        checkpoint_name = model_name + '_epoch' + str(n_epochs_so_far)
+        checkpoint_path = os.path.join(self.output_dir,checkpoint_name + '.pt')
+        # Save checkpoint
+        torch.save(self.model.state_dict(), checkpoint_path)
+
+
+
 
 
 def run_task(task_class):
     # If not all the abstract methods are defined, this will raise an error
-    task = task_class()
-
-    # Obtain full paths to output and log files, and create directories OUTPUT and LOG
-    task.output_dir = create_output_directory(task) # Save output directory as a task attribute. This will be handy if we create other output during the task in addition to the main output file
-    task.log_file = create_log_directory_and_get_log_file(task) # Common, final log file for whole experiment directory
-    task.tmp_log_file = create_log_directory_and_get_tmp_log_file(task)  # Individual, temporary log file for each task. This way several tasks can run and write log simultaneously
-    
+    task = task_class() 
     # Redirect all output to tmp log file
-    tmp_f = open(task.tmp_log_file, 'w')
+    tmp_f = open(task.tmp_log_file, 'a')
     original_stdout = sys.stdout
     original_stderr = sys.stderr
     if not task.debug:
@@ -124,7 +174,8 @@ def run_task(task_class):
     task.log_file_handler = tmp_f # Save file handler as a task attribute in case there are external executables and we need to redirect their output to the log file
 
     # Print task name and starting time
-    print('\n\n### STARTING TASK ###')
+    print('\n\n### STARTING TASK ###')   # To separate consecutive tasks in the log file, space is added before the "starting" message and not after
+                                         # the "finished" message, since the "finished" message may not be printed if there is an error.
     print('Task: ', task_class.__name__)
     print('Started at time: ', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     sys.stdout.flush()
@@ -134,17 +185,14 @@ def run_task(task_class):
 
     # Run task only if: 1) The task itself is not already completed
     #                   2) The task dependencies are completed
-    is_task_completed = check_task_is_completed(task)
-    are_dependencies_completed = check_dependencies_are_completed(task)
-
-    if is_task_completed:
+    if task.is_completed:
         print('Task is already completed. No need to run again.')
         print('### ABORTING TASK ###')
-    elif not are_dependencies_completed:
+    elif not task.are_dependencies_completed:
         print('Some required tasks are incomplete. Cannot run', task_class.__name__)
         print('### ABORTING TASK ###')
     else:
-        print("This task parameters are ", task.parameters)
+        print('This task parameters are ', task.params)
         # Run the task 
         task.run()
         # Print finishing time
