@@ -2,7 +2,62 @@
 # Example usage for the task Sum:
 # python sample_tasks.py Sum 
 
-class Sum(MainTask):
+# This file contains tasks that solve a quadratic equation:   
+#            0 = ax^2 + bx +c
+#            x = (-b ± √(b^2 - 4ac)) / (2a)
+
+from guatask import Task
+import numpy as np
+import pickle
+
+class ComputeEquationComponents(Task):
+    '''Computes components of a quadratic equation:
+        - Numerator left: -b
+        - Numerator right: √(b^2 - 4ac)
+        - Denominator: 2a
+    '''
+    requires = []
+    params = {'a': 2, 'b': -11, 'c':14}
+    directory = 'quadratic'
+    output_filename = 'equation_components.pkl'
+    def run(self):
+        a, b, c = self.params['a'], self.params['b'], self.params['c']
+        numerator_left = -b
+        numerator_right = np.square(b^2-4*a*c)
+        denominator = 2*a
+        components = {'numerator_left':numerator_left, 'numerator_right':numerator_right, 'denominator':denominator}
+        with open(self.output_filepath, 'wb') as f:
+            pickle.dump(components, f)
+    def load_output(self):
+        with open(self.output_filepath, 'rb') as f:
+           components = pickle.load(f) 
+        return components
+
+
+class ComputePlusSolution(Task):
+    '''Computes the + solution of a quadratic equation (-b + √(b^2 - 4ac)) / (2a)'''
+    requires = [ComputeEquationComponents]
+    params = {}
+    directory = 'quadratic'
+    output_filename = 'plus_solution.txt'
+    def run(self):
+        raise NotImplementedError
+    def load_output(self):
+        pass
+
+
+class ComputeMinusSolution(Task):
+    '''Computes the - solution of a quadratic equation (-b - √(b^2 - 4ac)) / (2a)'''
+    requires = [ComputeEquationComponents]
+    params = {}
+    directory = 'quadratic'
+    output_filename = 'minus_solution.txt'
+    def run(self):
+        raise NotImplementedError
+    def load_output(self):
+        pass
+
+class Sum(Task):
     """ Sample task that Multiply can depend on"""
     requires = []
     directory = 'task_to_print'
@@ -20,7 +75,7 @@ class Sum(MainTask):
         output = np.load_text(self.output_file)
         return output
 
-class Substraction(MainTask):
+class Substraction(Task):
     """ Sample task that Multiply can depend on"""
     requires = []
     directory = 'task_to_print'
@@ -38,7 +93,7 @@ class Substraction(MainTask):
         output = np.load_text(self.output_file)
         return output
 
-class Multiply(MainTask):
+class Multiply(Task):
     """ Sample task to test run_task() function"""
     requires = [Sum, Substraction]
     directory = 'task_to_print'
