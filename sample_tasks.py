@@ -1,122 +1,110 @@
-# This file contains sample tasks for the purpose of showing an example and debugging
-# Example usage for the task Sum:
-# python sample_tasks.py Sum 
-
-# This file contains tasks that solve a quadratic equation:   
+# This file contains sample tasks that solve a quadratic equation:   
 #            0 = ax^2 + bx +c
 #            x = (-b ± √(b^2 - 4ac)) / (2a)
 
-from guatask import Task
+from guatask import Task, run_task
 import numpy as np
 import pickle
+import sys
 
-class ComputeEquationComponents(Task):
-    '''Computes components of a quadratic equation:
-        - Numerator left: -b
-        - Numerator right: √(b^2 - 4ac)
-        - Denominator: 2a
+# For the example, we will solve 0 = 5x^2 + 6x + 1
+params = {'a':5, 'b':6, 'c':1}
+
+class ComputeSqrt(Task):
     '''
-    requires = []
-    params = {'a': 2, 'b': -11, 'c':14}
+    Computes the square root √(b^2 - 4ac)).
+    '''
     directory = 'quadratic'
-    output_filename = 'equation_components.pkl'
-    def run(self):
-        a, b, c = self.params['a'], self.params['b'], self.params['c']
-        numerator_left = -b
-        numerator_right = np.square(b^2-4*a*c)
-        denominator = 2*a
-        components = {'numerator_left':numerator_left, 'numerator_right':numerator_right, 'denominator':denominator}
-        with open(self.output_filepath, 'wb') as f:
-            pickle.dump(components, f)
-    def load_output(self):
-        with open(self.output_filepath, 'rb') as f:
-           components = pickle.load(f) 
-        return components
+    subdirectory = 'compute_sqrt'
+    output_filename = 'sqrt.npy'
+    requires = []
+    params = params
+    debug = True
 
+    def run(self):
+        a = self.params['a']
+        b = self.params['b']
+        c = self.params['c']
+        sqrt = np.sqrt(b**2 - 4*a*c)
+        np.save(self.output_filepath, sqrt)
+
+    def load_output(self):
+        sqrt = np.load(self.output_filepath)
+        return sqrt
+
+
+class ComputePlusNumerator(Task):
+    '''
+    Computes the numerator -b + √(b^2 - 4ac)
+    for the "plus" solution.
+    '''
+    directory = 'quadratic'
+    subdirectory = 'compute_plus_numerator'
+    output_filename = 'plus_numerator.npy'
+    requires = [ComputeSqrt]
+    params = params
+    debug = True
+
+    def run(self):
+        b = self.params['b']
+        sqrt = self.requires[0]().load_output()
+        num = -b + sqrt 
+        np.save(self.output_filepath, num)
+
+    def load_output(self):
+        num = np.load(self.output_filepath)
+        return num
+
+class ComputeDenominator(Task):
+    '''
+    Computes the denominator 2a.
+    '''
+    directory = 'quadratic'
+    subdirectory = 'compute_denominator'
+    output_filename = 'denominator.npy'
+    requires = []
+    params = params
+    debug = True
+
+    def run(self):
+        a = self.params['a']
+        denom = 2*a
+        np.save(self.output_filepath, denom)
+
+    def load_output(self):
+        denom = np.load(self.output_filepath)
+        return denom
 
 class ComputePlusSolution(Task):
-    '''Computes the + solution of a quadratic equation (-b + √(b^2 - 4ac)) / (2a)'''
-    requires = [ComputeEquationComponents]
-    params = {}
+    '''
+    Computes the plus solution (-b + √(b^2 - 4ac)) / (2a).
+    '''
     directory = 'quadratic'
-    output_filename = 'plus_solution.txt'
-    def run(self):
-        raise NotImplementedError
-    def load_output(self):
-        pass
-
-
-class ComputeMinusSolution(Task):
-    '''Computes the - solution of a quadratic equation (-b - √(b^2 - 4ac)) / (2a)'''
-    requires = [ComputeEquationComponents]
+    subdirectory = 'compute_plus_solution'
+    output_filename = 'plus_solution.npy'
+    requires = [ComputePlusNumerator,ComputeDenominator]
     params = {}
-    directory = 'quadratic'
-    output_filename = 'minus_solution.txt'
-    def run(self):
-        raise NotImplementedError
-    def load_output(self):
-        pass
-
-class Sum(Task):
-    """ Sample task that Multiply can depend on"""
-    requires = []
-    directory = 'task_to_print'
-    subdirectory = 'maths'
-    parameters = {'value1':2, 'value2':3}
-    output_file = 'sum_result.txt'
+    debug = True
 
     def run(self):
-        sum = self.parameters['value1'] + self.parameters['value2']
-        sum = np.array(sum)
-        np.savetxt(self.output_file, [sum])
-        print('the result of the sum is ', sum)
+        num = self.requires[0]().load_output()
+        denom = self.requires[1]().load_output()
+        plus_sol = num/denom
+        print(f'Solution is {plus_sol}')
+        np.save(self.output_filepath, plus_sol)
 
     def load_output(self):
-        output = np.load_text(self.output_file)
-        return output
+        plus_sol = np.load(self.output_filepath)
+        return plus_sol
 
-class Substraction(Task):
-    """ Sample task that Multiply can depend on"""
-    requires = []
-    directory = 'task_to_print'
-    subdirectory = 'maths'
-    parameters = {'value1':2, 'value2':3}
-    output_file = 'substraction_result.txt'
 
-    def run(self):
-        substraction = self.parameters['value1'] - self.parameters['value2']
-        substraction = np.array(substraction)
-        np.savetxt(self.output_file, [substraction])
-        print('the result of the substraction is ', substraction)
 
-    def load_output(self):
-        output = np.load_text(self.output_file)
-        return output
-
-class Multiply(Task):
-    """ Sample task to test run_task() function"""
-    requires = [Sum, Substraction]
-    directory = 'task_to_print'
-    subdirectory = 'maths'
-    parameters = {'value1':2, 'value2':3}
-    output_file = 'multiplication_result.txt'
-
-    def run(self):
-        product = self.parameters['value1'] * self.parameters['value2']
-        product = np.array(product)
-        np.savetxt(self.output_file, [product])
-        print('the result of the multiplication is ', product)
-
-    def load_output(self):
-        output = np.load_text(self.output_file)
-        return output
 
 
 
 
 if __name__ == '__main__':
     task = sys.argv[1]
-    #__import__('pdb').set_trace()
     if task in globals():
         run_task(globals()[task])
     else:
