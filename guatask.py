@@ -54,24 +54,32 @@ class Task(abc.ABC):
     log_file_handler = None  # This will be set by the task manager later, and it's there because it can be used 
                              # by subprocess to save the log of external executables, if needed
     @property
+    def _path_to_tasks(self):
+        '''
+        Returns the full path to the directory where the tasks Python file (like main.py
+        or tasks.py) is located
+        From  https://stackoverflow.com/questions/2092752/getting-the-module-file-path-of-a-derived-class-via-inheritance
+        '''
+        return os.path.dirname(sys.modules[self.__class__.__module__].__file__)
+    @property
     def output_filepath(self):
         """ Takes the directory, subdirectory and output filename and combines them together"""
-        return os.path.abspath(os.path.join(self.directory,'OUTPUT',self.subdirectory,self.output_filename))
+        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'OUTPUT',self.subdirectory,self.output_filename))
     @property
     def output_dir(self):
         """ Returns the full path to the output directory"""
-        return os.path.abspath(os.path.join(self.directory,'OUTPUT',self.subdirectory))
+        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'OUTPUT',self.subdirectory))
     @property
     def input_dir(self):
         """ Returns the full path to the input directory"""
-        return os.path.abspath(os.path.join(self.directory,'INPUT'))
+        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'INPUT'))
     @property
     def log_file(self):
-        return os.path.abspath(os.path.join(self.directory, 'LOG', 'task.log'))
+        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory, 'LOG', 'task.log'))
     @property
     def tmp_log_file(self):
         # The task being run is passed as an instance object (rather than as a class object), so to get the class name we need task.__class__.__name__
-        return os.path.abspath(os.path.join(self.directory, 'LOG', self.__class__.__name__ + '.log'))
+        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory, 'LOG', self.__class__.__name__ + '.log'))
     @property
     def is_completed(self):
         is_completed = os.path.exists(self.output_filepath)
@@ -85,8 +93,7 @@ class Task(abc.ABC):
         else:
             for each_required_task in self.requires:
                 each_instance = each_required_task()
-                each_required_output_filename = os.path.join(each_instance.directory, 'OUTPUT', each_instance.subdirectory, each_instance.output_filename)
-                is_completed = os.path.exists(each_required_output_filename)
+                is_completed = os.path.exists(each_instance.output_filepath)
                 is_completed_message = 'COMPLETE' if is_completed else 'INCOMPLETE'
                 # each_instance is a class instance, so to obtain the class name we do each_instance.__class__.__name__
                 print('\t' + each_instance.__class__.__name__, is_completed_message)
