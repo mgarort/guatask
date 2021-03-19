@@ -62,17 +62,9 @@ class Task(abc.ABC):
         '''
         return os.path.dirname(sys.modules[self.__class__.__module__].__file__)
     @property
-    def output_filepath(self):
-        """ Takes the directory, subdirectory and output filename and combines them together"""
-        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'OUTPUT',self.subdirectory,self.output_filename))
-    @property
-    def output_dir(self):
-        """ Returns the full path to the output directory"""
-        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'OUTPUT',self.subdirectory))
-    @property
-    def input_dir(self):
-        """ Returns the full path to the input directory"""
-        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'INPUT'))
+    def input_filepath(self):
+        """ Takes the directory and input filename and combines them together"""
+        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'INPUT',self.input_filename))
     @property
     def log_filepath(self):
         return os.path.abspath(os.path.join(self._path_to_tasks,self.directory, 'LOG', 'task.log'))
@@ -80,6 +72,22 @@ class Task(abc.ABC):
     def tmp_log_filepath(self):
         # The task being run is passed as an instance object (rather than as a class object), so to get the class name we need task.__class__.__name__
         return os.path.abspath(os.path.join(self._path_to_tasks,self.directory, 'LOG', self.__class__.__name__ + '.log'))
+    @property
+    def output_filepath(self):
+        """ Takes the directory, subdirectory and output filename and combines them together"""
+        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'OUTPUT',self.subdirectory,self.output_filename))
+    @property
+    def input_dir(self):
+        """ Returns the full path to the input directory"""
+        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'INPUT'))
+    @property
+    def log_dir(self):
+        """ Returns the full path to the log directory"""
+        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'LOG'))
+    @property
+    def output_dir(self):
+        """ Returns the full path to the output directory"""
+        return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'OUTPUT',self.subdirectory))
     @property
     def is_completed(self):
         is_completed = os.path.exists(self.output_filepath)
