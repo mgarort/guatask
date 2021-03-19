@@ -35,7 +35,7 @@ class Task(abc.ABC):
     def run(self):
         """ Method with sequence of instructions to complete the task. Needs to:
             - Collect necessary input from self.requires and self.params.
-            - If using external executables, redirect standard output to self.log_file (through self.log_file_handler).
+            - If using external executables, redirect standard output to self.log_filepath (through self.log_file_handler).
             - Save output to self.output_filename.
         """
         raise NotImplementedError
@@ -74,10 +74,10 @@ class Task(abc.ABC):
         """ Returns the full path to the input directory"""
         return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'INPUT'))
     @property
-    def log_file(self):
+    def log_filepath(self):
         return os.path.abspath(os.path.join(self._path_to_tasks,self.directory, 'LOG', 'task.log'))
     @property
-    def tmp_log_file(self):
+    def tmp_log_filepath(self):
         # The task being run is passed as an instance object (rather than as a class object), so to get the class name we need task.__class__.__name__
         return os.path.abspath(os.path.join(self._path_to_tasks,self.directory, 'LOG', self.__class__.__name__ + '.log'))
     @property
@@ -111,7 +111,7 @@ class Task(abc.ABC):
 
         # Create log directory
         # After the log directory is created, we can get the paths for the log file and the tmp log file with the @property methods 
-        # task.log_file and task.tmp_log_file. 
+        # task.log_filepath and task.tmp_log_filepath. 
         log_directory = os.path.join(self.directory, 'LOG')
         if not os.path.exists(log_directory):
             os.makedirs(log_directory)
@@ -171,7 +171,7 @@ def run_task(task_class):
     # If not all the abstract methods are defined, this will raise an error
     task = task_class() 
     # Redirect all output to tmp log file
-    tmp_f = open(task.tmp_log_file, 'a')
+    tmp_f = open(task.tmp_log_filepath, 'a')
     original_stdout = sys.stdout
     original_stderr = sys.stderr
     if not task.debug:
@@ -213,6 +213,6 @@ def run_task(task_class):
     tmp_f.close()
 
     # Copy contents of temporary log file to final log file
-    with open(task.tmp_log_file, 'r') as tmp_f, open(task.log_file, 'a') as f:
+    with open(task.tmp_log_filepath, 'r') as tmp_f, open(task.log_filepath, 'a') as f:
         content = tmp_f.read()
         f.write(content)
