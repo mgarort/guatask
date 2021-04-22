@@ -60,41 +60,33 @@ class Task(abc.ABC):
         or tasks.py) is located
         From  https://stackoverflow.com/questions/2092752/getting-the-module-file-path-of-a-derived-class-via-inheritance
         '''
-        # return os.path.dirname(sys.modules[self.__class__.__module__].__file__)
         return Path(sys.modules[self.__class__.__module__].__file__).parent
     @property
     def input_filepath(self):
         """ Takes the directory and input filename and combines them together"""
-        # return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'INPUT',self.input_filename))
         return (self._path_to_tasks / self.directory / 'INPUT' / self.input_filename).resolve()
     @property
     def log_filepath(self):
-        # return os.path.abspath(os.path.join(self._path_to_tasks,self.directory, 'LOG', 'task.log'))
         return (self._path_to_tasks / self.directory / 'LOG' / 'task.log').resolve()
     @property
     def tmp_log_filepath(self):
         # The task being run is passed as an instance object (rather than as a class object), so to get the class name we need task.__class__.__name__
-        # return os.path.abspath(os.path.join(self._path_to_tasks,self.directory, 'LOG', self.__class__.__name__ + '.log'))
         return (self._path_to_tasks / self.directory / 'LOG' / (self.__class__.__name__ + '.log')).resolve()
     @property
     def output_filepath(self):
         """ Takes the directory, subdirectory and output filename and combines them together"""
-        # return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'OUTPUT',self.subdirectory,self.output_filename))
         return (self._path_to_tasks / self.directory / 'OUTPUT' / self.subdirectory / self.output_filename).resolve()
     @property
     def input_dir(self):
         """ Returns the full path to the input directory"""
-        # return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'INPUT'))
         return (self._path_to_tasks / self.directory / 'INPUT').resolve()
     @property
     def log_dir(self):
         """ Returns the full path to the log directory"""
-        # return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'LOG'))
         return (self._path_to_tasks / self.directory / 'LOG').resolve()
     @property
     def output_dir(self):
         """ Returns the full path to the output directory"""
-        # return os.path.abspath(os.path.join(self._path_to_tasks,self.directory,'OUTPUT',self.subdirectory))
         return (self._path_to_tasks / self.directory / 'OUTPUT' / self.subdirectory).resolve()
     @property
     def is_completed(self):
