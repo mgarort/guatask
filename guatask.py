@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 import abc
-import torch
+# import torch
 import numpy as np
 
 
@@ -131,44 +131,44 @@ class TrainTask(Task):  # TODO Implement all the features described in the guata
 
 
 
-class PytorchTrainTask(TrainTask):  # TODO Implement all the features described in the guatask page of your wiki
-    def __init__(self):
-        super().__init__()
-        use_cuda = self.params['train_loop']['use_cuda']
-        self.device = torch.device('cuda' if use_cuda else 'cpu')
-    def evaluate(self,dataloader,verbose=False):
-        '''Evaluate the performance of the model in its current state (which could be at any stage before, during or after training)
-        - dataloader: Pytorch dataloader containing the dataset to evaluate on.'''
-        metric = self.params['train_loop']['metric']
-        model = self.model.to(self.device)
-        dataloader_len = dataloader.dataset.len
-        batch_size = self.params['train_loop']['batch_size']
-        Y_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
-        P_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
-        for idx, batch in enumerate(dataloader):
-            X, Y = batch
-            X = X.to(self.device)  # if the evaluation is to be executed outside of task.run, self.device should be set as a task attribute in PytorchTrainTask
-            Y = Y.reshape(-1,1)
-            Y = Y.double().to(self.device)
-            P = model(X)
-            Y_all[idx*batch_size:(idx+1)*batch_size] = Y.detach().cpu().numpy()
-            P_all[idx*batch_size:(idx+1)*batch_size] = P.detach().cpu().numpy()
-            log_freq = 10
-            if verbose:
-                if idx % log_freq == log_freq - 1:
-                    print('Processed', idx+1, 'batches')
-        metric_value = metric(Y_all,P_all)
-        print('Metric used:', metric)
-        print('Metric value:', metric_value)
-    def checkpoint_current_model(self,n_epochs_so_far):
-        '''Saves the model in its current state (which could be before, during or after training).
-        - n_epochs_so_far: number of epochs trained so far'''
-        # Create path for checkpoint
-        model_name = self.output_filename.split('.pt')[0]
-        checkpoint_name = model_name + '_epoch' + str(n_epochs_so_far)
-        checkpoint_path = self.output_dir / checkpoint_name + '.pt'
-        # Save checkpoint
-        torch.save(self.model.state_dict(), checkpoint_path)
+# class PytorchTrainTask(TrainTask):  # TODO Implement all the features described in the guatask page of your wiki
+#     def __init__(self):
+#         super().__init__()
+#         use_cuda = self.params['train_loop']['use_cuda']
+#         self.device = torch.device('cuda' if use_cuda else 'cpu')
+#     def evaluate(self,dataloader,verbose=False):
+#         '''Evaluate the performance of the model in its current state (which could be at any stage before, during or after training)
+#         - dataloader: Pytorch dataloader containing the dataset to evaluate on.'''
+#         metric = self.params['train_loop']['metric']
+#         model = self.model.to(self.device)
+#         dataloader_len = dataloader.dataset.len
+#         batch_size = self.params['train_loop']['batch_size']
+#         Y_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
+#         P_all = np.full(shape=(dataloader_len,1),fill_value=np.inf)
+#         for idx, batch in enumerate(dataloader):
+#             X, Y = batch
+#             X = X.to(self.device)  # if the evaluation is to be executed outside of task.run, self.device should be set as a task attribute in PytorchTrainTask
+#             Y = Y.reshape(-1,1)
+#             Y = Y.double().to(self.device)
+#             P = model(X)
+#             Y_all[idx*batch_size:(idx+1)*batch_size] = Y.detach().cpu().numpy()
+#             P_all[idx*batch_size:(idx+1)*batch_size] = P.detach().cpu().numpy()
+#             log_freq = 10
+#             if verbose:
+#                 if idx % log_freq == log_freq - 1:
+#                     print('Processed', idx+1, 'batches')
+#         metric_value = metric(Y_all,P_all)
+#         print('Metric used:', metric)
+#         print('Metric value:', metric_value)
+#     def checkpoint_current_model(self,n_epochs_so_far):
+#         '''Saves the model in its current state (which could be before, during or after training).
+#         - n_epochs_so_far: number of epochs trained so far'''
+#         # Create path for checkpoint
+#         model_name = self.output_filename.split('.pt')[0]
+#         checkpoint_name = model_name + '_epoch' + str(n_epochs_so_far)
+#         checkpoint_path = self.output_dir / checkpoint_name + '.pt'
+#         # Save checkpoint
+#         torch.save(self.model.state_dict(), checkpoint_path)
 
 
 
