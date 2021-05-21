@@ -54,46 +54,46 @@ class Task(abc.ABC):
     log_file_handler = None  # This will be set by the task manager later, and it's there because it can be used
                              # by subprocess to save the log of external executables, if needed
     @property
-    def _path_to_tasks_file(self):
+    def tasks_filepath(self):
         '''
         Returns the full path to the tasks Python file (like main.py or tasks.py)
         From  https://stackoverflow.com/questions/2092752/getting-the-module-file-path-of-a-derived-class-via-inheritance
         '''
         return Path(sys.modules[self.__class__.__module__].__file__)
     @property
-    def _path_to_tasks_dir(self):
+    def tasks_dir(self):
         '''
         Returns the full path to the directory where the tasks Python file (like main.py
         or tasks.py) is located
         '''
-        return self._path_to_tasks_file.parent
+        return self.tasks_filepath.parent
     @property
     def input_filepath(self):
         """ Takes the directory and input filename and combines them together"""
-        return (self._path_to_tasks_dir / self.directory / 'INPUT' / self.input_filename).resolve()
+        return (self.tasks_dir / self.directory / 'INPUT' / self.input_filename).resolve()
     @property
     def log_filepath(self):
-        return (self._path_to_tasks_dir / self.directory / 'LOG' / 'task.log').resolve()
+        return (self.tasks_dir / self.directory / 'LOG' / 'task.log').resolve()
     @property
     def tmp_log_filepath(self):
         # The task being run is passed as an instance object (rather than as a class object), so to get the class name we need task.__class__.__name__
-        return (self._path_to_tasks_dir / self.directory / 'LOG' / (self.__class__.__name__ + '.log')).resolve()
+        return (self.tasks_dir / self.directory / 'LOG' / (self.__class__.__name__ + '.log')).resolve()
     @property
     def output_filepath(self):
         """ Takes the directory, subdirectory and output filename and combines them together"""
-        return (self._path_to_tasks_dir / self.directory / 'OUTPUT' / self.subdirectory / self.output_filename).resolve()
+        return (self.tasks_dir / self.directory / 'OUTPUT' / self.subdirectory / self.output_filename).resolve()
     @property
     def input_dir(self):
         """ Returns the full path to the input directory"""
-        return (self._path_to_tasks_dir / self.directory / 'INPUT').resolve()
+        return (self.tasks_dir / self.directory / 'INPUT').resolve()
     @property
     def log_dir(self):
         """ Returns the full path to the log directory"""
-        return (self._path_to_tasks_dir / self.directory / 'LOG').resolve()
+        return (self.tasks_dir / self.directory / 'LOG').resolve()
     @property
     def output_dir(self):
         """ Returns the full path to the output directory"""
-        return (self._path_to_tasks_dir / self.directory / 'OUTPUT' / self.subdirectory).resolve()
+        return (self.tasks_dir / self.directory / 'OUTPUT' / self.subdirectory).resolve()
     @property
     def is_completed(self):
         is_completed = self.output_filepath.exists()
@@ -197,7 +197,7 @@ def run_task(task_class):
     print('\n\n### STARTING TASK ###')   # To separate consecutive tasks in the log file, space is added before the "starting" message and not after
                                          # the "finished" message, since the "finished" message may not be printed if there is an error.
     print('Task: ', task_class.__name__)
-    print('File: ', task._path_to_tasks_file)
+    print('File: ', task.tasks_filepath)
     print('Started at time: ', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     sys.stdout.flush()
     sys.stderr.flush()
