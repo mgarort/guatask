@@ -120,14 +120,18 @@ class Task(abc.ABC):
     def __init__(self):
         # Create output directory
         # After creating it, the output directory can always be accessed through the @property method task.output_dir
-        if not self.output_dir.exists():
+        try:
             self.output_dir.mkdir(parents=True)
+        except FileExistsError:
+            pass
 
         # Create log directory
         # After the log directory is created, we can get the paths for the log file and the tmp log file with the @property methods
         # task.log_filepath and task.tmp_log_filepath.
-        if not self.log_dir.exists():
+        try:
             self.log_dir.mkdir(parents=True)
+        except FileExistsError:
+            pass
 
 
 
