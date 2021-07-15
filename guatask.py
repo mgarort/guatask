@@ -232,7 +232,15 @@ def run_task(task_class):
         task.running_filepath.touch()
         print('This task parameters are ', task.params)
         # Run the task
-        task.run()
+        try:
+            task.run()
+        except Exception as exception:
+            print(exception)
+        finally:
+            # Delete the check file for not running simultaneously
+            # (finally runs both if an error is found and if not)
+            task.running_filepath.unlink()
+
         # Print finishing time
         print('Finished at time: ', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         print('### FINISHED TASK ###')
