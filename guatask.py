@@ -83,6 +83,11 @@ class Task(abc.ABC):
         """ Takes the directory, subdirectory and output filename and combines them together"""
         return (self.tasks_dir / self.directory / 'OUTPUT' / self.subdirectory / self.output_filename).resolve()
     @property
+    def running_filepath(self):
+        """ Path for temporary file that indicates a task is running. Same as
+        output_filepath, but with a '_RUNNING' suffix. """
+        return self.output_filepath.parent / (self.output_filepath.name + '_RUNNING')
+    @property
     def input_dir(self):
         """ Returns the full path to the input directory"""
         return (self.tasks_dir / self.directory / 'INPUT').resolve()
@@ -114,6 +119,10 @@ class Task(abc.ABC):
                 if not is_completed:
                     are_all_completed = False
         return are_all_completed
+    @property
+    def is_running(self):
+        is_running = self.running_filepath.exists()
+        return is_running
 
 
     # USUAL INIT
@@ -213,10 +222,14 @@ def run_task(task_class):
     if task.is_completed:
         print('Task is already completed. No need to run again.')
         print('### ABORTING TASK ###')
+    elif task.is_running:
+        print('Task is currently running. No need to start it again.')
+        print('### ABORTING TASK ###')
     elif not task.are_dependencies_completed:
         print('Some required tasks are incomplete. Cannot run', task_class.__name__)
         print('### ABORTING TASK ###')
     else:
+        task.running_filepath.touch()
         print('This task parameters are ', task.params)
         # Run the task
         task.run()
